@@ -8,7 +8,7 @@ import { z } from "zod";
 import { analyzeDocuments } from "@/app/actions";
 import { type GenerateFitReportOutput } from "@/ai/flows/generate-fit-report";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Loader2, Trash2 } from "lucide-react";
@@ -31,21 +31,33 @@ const ACCEPTED_FILE_TYPES = [
 
 const FormSchema = z.object({
   resumeText: z.string().optional(),
-  resumeFile: z.instanceof(File).optional()
-    .refine(file => !file || file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
-    .refine(file => !file || ACCEPTED_FILE_TYPES.includes(file.type), "Unsupported file type."),
+  resumeFile: z.any()
+    .optional()
+    .refine((files: FileList) => files?.length > 0 ? files?.[0]?.size <= MAX_FILE_SIZE : true, `Max file size is 5MB.`)
+    .refine((files: FileList) => files?.length > 0 ? ACCEPTED_FILE_TYPES.includes(files?.[0]?.type) : true, "Unsupported file type."),
   jobDescriptionText: z.string().optional(),
-  jobDescriptionFile: z.instanceof(File).optional()
-    .refine(file => !file || file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
-    .refine(file => !file || ACCEPTED_FILE_TYPES.includes(file.type), "Unsupported file type."),
+  jobDescriptionFile: z.any()
+    .optional()
+    .refine((files: FileList) => files?.length > 0 ? files?.[0]?.size <= MAX_FILE_SIZE : true, `Max file size is 5MB.`)
+    .refine((files: FileList) => files?.length > 0 ? ACCEPTED_FILE_TYPES.includes(files?.[0]?.type) : true, "Unsupported file type."),
   resumeInputType: z.enum(['text', 'file']).default('text'),
   jdInputType: z.enum(['text', 'file']).default('text'),
 })
-.refine(data => (data.resumeInputType === 'text' ? !!data.resumeText : !!data.resumeFile), {
+.refine(data => {
+  if (data.resumeInputType === 'text') {
+    return !!data.resumeText && data.resumeText.length > 0;
+  }
+  return !!data.resumeFile && data.resumeFile.length > 0;
+}, {
   message: "Resume is required.",
   path: ["resumeText"], 
 })
-.refine(data => (data.jdInputType === 'text' ? !!data.jobDescriptionText : !!data.jobDescriptionFile), {
+.refine(data => {
+  if (data.jdInputType === 'text') {
+    return !!data.jobDescriptionText && data.jobDescriptionText.length > 0;
+  }
+  return !!data.jobDescriptionFile && data.jobDescriptionFile.length > 0;
+}, {
   message: "Job description is required.",
   path: ["jobDescriptionText"],
 });
@@ -76,14 +88,14 @@ export default function Home() {
       const formData = new FormData();
       if (data.resumeInputType === 'text' && data.resumeText) {
         formData.append("resumeText", data.resumeText);
-      } else if (data.resumeInputType === 'file' && data.resumeFile) {
-        formData.append("resumeFile", data.resumeFile);
+      } else if (data.resumeInputType === 'file' && data.resumeFile?.length > 0) {
+        formData.append("resumeFile", data.resumeFile[0]);
       }
 
       if (data.jdInputType === 'text' && data.jobDescriptionText) {
         formData.append("jobDescriptionText", data.jobDescriptionText);
-      } else if (data.jdInputType === 'file' && data.jobDescriptionFile) {
-        formData.append("jobDescriptionFile", data.jobDescriptionFile);
+      } else if (data.jdInputType === 'file' && data.jobDescriptionFile?.length > 0) {
+        formData.append("jobDescriptionFile", data.jobDescriptionFile[0]);
       }
       
       const { data: result, error } = await analyzeDocuments(formData);
