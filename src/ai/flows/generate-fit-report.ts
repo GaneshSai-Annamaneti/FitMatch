@@ -18,9 +18,9 @@ const GenerateFitReportInputSchema = z.object({
 export type GenerateFitReportInput = z.infer<typeof GenerateFitReportInputSchema>;
 
 const GenerateFitReportOutputSchema = z.object({
-  matchScore: z.number().describe('The overall match score between the resume and the job description (0-100).'),
-  strengths: z.string().describe('A detailed description of the strengths of the resume in relation to the job description.'),
-  weaknesses: z.string().describe('A detailed description of the weaknesses of the resume in relation to the job description.'),
+  matchScore: z.number().describe('The percentage match between the resume and job description.'),
+  strengths: z.string().describe('A detailed report of the resume strengths based on the job description.'),
+  weaknesses: z.string().describe('A detailed report of the resume weaknesses based on the job description.'),
 });
 export type GenerateFitReportOutput = z.infer<typeof GenerateFitReportOutputSchema>;
 
@@ -43,12 +43,7 @@ const generateFitReportPrompt = ai.definePrompt({
   Instructions:
   1.  Calculate a match score (0-100) representing how well the resume aligns with the job description.
   2.  Identify and describe the strengths of the resume in relation to the job description. Focus on skills, experience, and qualifications that are a good fit.
-  3.  Identify and describe the weaknesses of the resume in relation to the job description. Highlight any gaps or areas where the resume is lacking.
-
-  Format your response as a JSON object with the following keys:
-  - matchScore: (number, 0-100)
-  - strengths: (string)
-  - weaknesses: (string)`,
+  3.  Identify and describe the weaknesses of the resume in relation to the job description. Highlight any gaps or areas where the resume is lacking.`,
 });
 
 const generateFitReportFlow = ai.defineFlow(

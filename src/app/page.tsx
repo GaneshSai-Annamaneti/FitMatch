@@ -1,39 +1,44 @@
-
 "use client";
 
 import { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { getFitReport, getTextFromFile } from "@/app/actions";
+import { analyzeDocuments } from "@/app/actions";
 import { type GenerateFitReportOutput } from "@/ai/flows/generate-fit-report";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { Loader2, ThumbsUp, ThumbsDown, Upload } from "lucide-react";
+import { Loader2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { ScoreDisplay } from "@/components/score-display";
 import { ReportCard } from "@/components/report-card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+const fileSchema = z.custom<FileList>().transform(file => file.length > 0 ? file.item(0) : null);
 
 const FormSchema = z.object({
   resumeText: z.string().optional(),
+  resumeFile: fileSchema.optional(),
   jobDescriptionText: z.string().optional(),
-  resumeFile: z.any().optional(),
-  jobFile: z.any().optional(),
-})
-.refine(data => (data.resumeText && data.resumeText.length > 0) || (data.resumeFile && data.resumeFile.length > 0), {
-  message: "Please provide a resume as text or upload a file.",
-  path: ["resumeText"], 
-})
-.refine(data => (data.jobDescriptionText && data.jobDescriptionText.length > 0) || (data.jobFile && data.jobFile.length > 0), {
-  message: "Please provide a job description as text or upload a file.",
-  path: ["jobDescriptionText"],
+  jobDescriptionFile: fileSchema.optional(),
+}).superRefine((data, ctx) => {
+    if (!data.resumeText && !data.resumeFile) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please provide a resume by text or file.", path: ["resumeText"] });
+    }
+     if (data.resumeText && data.resumeText.length < 50) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please provide a more detailed resume.", path: ["resumeText"] });
+    }
+    if (!data.jobDescriptionText && !data.jobDescriptionFile) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please provide a job description by text or file.", path: ["jobDescriptionText"] });
+    }
+    if (data.jobDescriptionText && data.jobDescriptionText.length < 50) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please provide a more detailed job description.", path: ["jobDescriptionText"] });
+    }
 });
 
 
@@ -42,8 +47,6 @@ type FormValues = z.infer<typeof FormSchema>;
 export default function Home() {
   const [analysisResult, setAnalysisResult] = useState<GenerateFitReportOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [resumeFileName, setResumeFileName] = useState("");
-  const [jobFileName, setJobFileName] = useState("");
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -53,55 +56,19 @@ export default function Home() {
       jobDescriptionText: "",
     },
   });
-
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    fieldName: "resumeFile" | "jobFile",
-    setFileName: (name: string) => void
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFileName(file.name);
-      form.setValue(fieldName, e.target.files);
-    } else {
-      setFileName("");
-      form.setValue(fieldName, null);
-    }
-  };
   
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     setIsLoading(true);
     setAnalysisResult(null);
 
-    let resumeText = data.resumeText ?? "";
-    let jobDescriptionText = data.jobDescriptionText ?? "";
-
     try {
-      if (data.resumeFile && data.resumeFile.length > 0) {
-        const formData = new FormData();
-        formData.append('file', data.resumeFile[0]);
-        const { data: text, error } = await getTextFromFile(formData);
-        if (error || !text) {
-          toast({ variant: "destructive", title: "Error reading resume file", description: error || "Could not extract text from file." });
-          setIsLoading(false);
-          return;
-        }
-        resumeText = text;
-      }
-
-      if (data.jobFile && data.jobFile.length > 0) {
-        const formData = new FormData();
-        formData.append('file', data.jobFile[0]);
-        const { data: text, error } = await getTextFromFile(formData);
-        if (error || !text) {
-          toast({ variant: "destructive", title: "Error reading job file", description: error || "Could not extract text from file." });
-          setIsLoading(false);
-          return;
-        }
-        jobDescriptionText = text;
-      }
+      const formData = new FormData();
+      if (data.resumeText) formData.append("resumeText", data.resumeText);
+      if (data.resumeFile) formData.append("resumeFile", data.resumeFile as File);
+      if (data.jobDescriptionText) formData.append("jobDescriptionText", data.jobDescriptionText);
+      if (data.jobDescriptionFile) formData.append("jobDescriptionFile", data.jobDescriptionFile as File);
       
-      const { data: result, error } = await getFitReport(resumeText, jobDescriptionText);
+      const { data: result, error } = await analyzeDocuments(formData);
 
       if (error) {
         toast({
@@ -142,36 +109,60 @@ export default function Home() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card className="shadow-md">
-              <CardHeader>
-                <CardTitle>Your Resume</CardTitle>
-                <CardDescription>Paste the text of your resume below.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Paste your resume..."
-                  className="min-h-[260px] text-sm"
-                  {...form.register("resumeText")}
-                />
-                {errors.resumeText && (
-                  <p className="text-sm text-destructive mt-2">{errors.resumeText.message}</p>
-                )}
-              </CardContent>
+                <CardHeader>
+                    <CardTitle>Your Resume</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Tabs defaultValue="text">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="text">Text</TabsTrigger>
+                            <TabsTrigger value="file">File Upload</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="text" className="mt-4">
+                            <CardDescription className="mb-2">Paste the text of your resume below.</CardDescription>
+                            <Textarea
+                                placeholder="Paste your resume..."
+                                className="min-h-[260px] text-sm"
+                                {...form.register("resumeText")}
+                                />
+                        </TabsContent>
+                        <TabsContent value="file" className="mt-4">
+                            <CardDescription className="mb-2">Upload your resume file.</CardDescription>
+                             <Input type="file" {...form.register("resumeFile")} accept=".pdf,.doc,.docx,.txt,.md,.csv" />
+                        </TabsContent>
+                    </Tabs>
+                    {errors.resumeText && (
+                        <p className="text-sm text-destructive mt-2">{errors.resumeText.message}</p>
+                    )}
+                </CardContent>
             </Card>
             <Card className="shadow-md">
-              <CardHeader>
-                <CardTitle>Job Description</CardTitle>
-                <CardDescription>Paste the text of the job description below.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Paste the job description..."
-                  className="min-h-[260px] text-sm"
-                  {...form.register("jobDescriptionText")}
-                />
-                {errors.jobDescriptionText && (
-                  <p className="text-sm text-destructive mt-2">{errors.jobDescriptionText.message}</p>
-                )}
-              </CardContent>
+                 <CardHeader>
+                    <CardTitle>Job Description</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Tabs defaultValue="text">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="text">Text</TabsTrigger>
+                            <TabsTrigger value="file">File Upload</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="text" className="mt-4">
+                            <CardDescription className="mb-2">Paste the job description below.</CardDescription>
+                            <Textarea
+                                placeholder="Paste the job description..."
+                                className="min-h-[260px] text-sm"
+                                {...form.register("jobDescriptionText")}
+                                />
+                        </TabsContent>
+                        <TabsContent value="file" className="mt-4">
+                             <CardDescription className="mb-2">Upload the job description file.</CardDescription>
+                             <Input type="file" {...form.register("jobDescriptionFile")} accept=".pdf,.doc,.docx,.txt,.md,.csv" />
+                        </TabsContent>
+                    </Tabs>
+                    {errors.jobDescriptionText && (
+                        <p className="text-sm text-destructive mt-2">{errors.jobDescriptionText.message}</p>
+                    )}
+                </CardContent>
             </Card>
           </div>
           
