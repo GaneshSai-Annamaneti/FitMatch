@@ -1,8 +1,6 @@
 
 "use server";
 import { generateFitReport, type GenerateFitReportOutput } from "@/ai/flows/generate-fit-report";
-import pdf from "pdf-parse";
-
 
 async function getTextFromFile(file: File): Promise<string> {
   // 1. Check for empty file
@@ -18,27 +16,15 @@ async function getTextFromFile(file: File): Promise<string> {
   if (buffer.length === 0) {
     throw new Error(`Failed to read content from file "${file.name}".`);
   }
-
-  // 4. Parse based on MIME type
-  try {
-    if (file.type === "application/pdf") {
-      const data = await pdf(buffer);
-      if(data && data.text) return data.text;
-    } 
-    
-    // Fallback for text-based files like .txt, .md, .csv
-    if (file.type.startsWith('text/')) {
-        const text = buffer.toString("utf-8");
-        if(text) return text;
-    }
-
-  } catch (error: any) {
-    console.error(`Error parsing file ${file.name} of type ${file.type}:`, error);
-    // Let the final error handler catch this and provide a user-friendly message
+  
+  // 4. For now, we will only support text-based files.
+  if (file.type.startsWith('text/') || file.type === 'application/octet-stream') {
+      const text = buffer.toString("utf-8");
+      if(text) return text;
   }
 
-  // If we get here, none of the parsers succeeded.
-  throw new Error(`Unsupported file type: ${file.type || 'unknown'}. Please upload a PDF or a plain text file.`);
+  // If we get here, the file type is not supported.
+  throw new Error(`Unsupported file type: ${file.type || 'unknown'}. Please upload a plain text file (.txt, .md). PDF and DOCX are not currently supported.`);
 }
 
 
