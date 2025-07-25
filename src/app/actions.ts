@@ -13,14 +13,15 @@ async function getTextFromFile(file: File): Promise<string> {
   
   try {
     if (fileName.endsWith('.pdf')) {
-       // Dynamically import pdf-parse only when needed
-      const pdf = (await import('pdf-parse')).default;
+      const pdfParse = await import('pdf-parse');
+      // The imported module might be nested under `default`
+      const pdf = pdfParse.default || pdfParse;
       const data = await pdf(buffer);
       return data.text;
     } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
       const { value } = await mammoth.extractRawText({ buffer });
       return value;
-    } else if (fileName.endsWith('.txt') || fileName.endsWith('.md')) {
+    } else if (fileName.endsWith('.txt')) {
       return buffer.toString("utf-8");
     }
   } catch (error: any) {
@@ -28,7 +29,7 @@ async function getTextFromFile(file: File): Promise<string> {
     throw new Error(`Failed to parse file "${file.name}". It might be corrupted or in an unsupported format.`);
   }
   
-  throw new Error(`Unsupported file type. Please upload a PDF, DOCX, DOC, or TXT file.`);
+  throw new Error(`Unsupported file type for "${file.name}". Please upload a PDF, DOCX, DOC, or TXT file.`);
 }
 
 export async function analyzeDocuments(formData: FormData): Promise<{ data: GenerateFitReportOutput | null; error: string | null }> {

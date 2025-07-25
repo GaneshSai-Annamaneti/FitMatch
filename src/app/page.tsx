@@ -21,12 +21,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_FILE_TYPES = [
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
-  "application/msword", // .doc
-  "text/plain", // .txt
-];
 const ACCEPTED_FILE_EXTENSIONS = [".pdf", ".docx", ".doc", ".txt"];
 
 
@@ -48,18 +42,33 @@ const FormSchema = z.object({
             });
             return;
         }
+
+        const lowerCaseName = file.name.toLowerCase();
+        const hasValidExtension = ACCEPTED_FILE_EXTENSIONS.some(ext => lowerCaseName.endsWith(ext));
+        const hasDoubleExtension = ACCEPTED_FILE_EXTENSIONS.filter(ext => lowerCaseName.includes(ext)).length > 1;
+
+        if (hasDoubleExtension) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `Invalid filename. Please remove extra extensions (e.g., rename ".docx.pdf" to ".pdf").`,
+                path: [fieldName],
+            });
+            return;
+        }
+
+        if (!hasValidExtension) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `Unsupported file type. Please upload a ${ACCEPTED_FILE_EXTENSIONS.join(', ')} file.`,
+                path: [fieldName],
+            });
+            return;
+        }
+
         if (file.size > MAX_FILE_SIZE) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: `Max file size is 5MB.`,
-                path: [fieldName],
-            });
-        }
-        const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
-        if (!ACCEPTED_FILE_TYPES.includes(file.type) && !ACCEPTED_FILE_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext))) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Unsupported file. Please upload a PDF, DOCX, DOC, or TXT file.",
                 path: [fieldName],
             });
         }
