@@ -11,7 +11,7 @@ interface ReportDisplayProps {
 }
 
 export function ReportDisplay({ report }: ReportDisplayProps) {
-    const { overallAnalysis, technicalSkills, softSkills, experience, roleFit, education, certifications, summaryReport, recommendations, considerations } = report;
+    const { overallAnalysis, technicalSkills, experience, roleFit, education, certifications, summaryReport, recommendations, considerations } = report;
 
     const getFitColor = (fit: string) => {
         const lowerFit = fit.toLowerCase();
@@ -126,18 +126,6 @@ export function ReportDisplay({ report }: ReportDisplayProps) {
                         missingSkills: technicalSkills.missingSkills,
                     }}
                 />
-
-                {softSkills && (
-                    <SkillsOrCertsCard 
-                        title="Soft Skills"
-                        icon={Smile}
-                        data={{
-                            score: softSkills.score,
-                            matchedSkills: softSkills.matchedSkills,
-                            missingSkills: softSkills.missingSkills,
-                        }}
-                    />
-                )}
 
                 <ReportCard title={`Experience (${experience.score}%)`} icon={Clock}>
                      <div className="space-y-4">
