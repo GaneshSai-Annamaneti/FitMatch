@@ -35,7 +35,7 @@ export async function getTextFromFile(formData: FormData): Promise<{ data: strin
       const data = await pdf(buffer, {});
       return { data: data.text, error: null };
     } else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || file.type === "application/msword") {
-      const { value } = await mammoth.extractRawText({ buffer });
+      const { value } = await mammoth.extractRawText({ buffer: buffer });
       return { data: value, error: null };
     } else if (file.type === "text/plain" || file.type === "text/markdown" || file.type === "text/csv") {
       return { data: buffer.toString(), error: null };
