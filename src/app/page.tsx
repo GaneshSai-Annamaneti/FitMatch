@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_FILE_EXTENSIONS = [".pdf", ".docx", ".doc", ".txt"];
+const ACCEPTED_FILE_EXTENSIONS = [".pdf", ".txt"];
 
 
 const FormSchema = z.object({
@@ -45,16 +45,6 @@ const FormSchema = z.object({
 
         const lowerCaseName = file.name.toLowerCase();
         const hasValidExtension = ACCEPTED_FILE_EXTENSIONS.some(ext => lowerCaseName.endsWith(ext));
-        const hasDoubleExtension = ACCEPTED_FILE_EXTENSIONS.filter(ext => lowerCaseName.includes(ext)).length > 1;
-
-        if (hasDoubleExtension) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Invalid filename. Please remove extra extensions (e.g., rename ".docx.pdf" to ".pdf").`,
-                path: [fieldName],
-            });
-            return;
-        }
 
         if (!hasValidExtension) {
              ctx.addIssue({
@@ -204,11 +194,11 @@ export default function Home() {
                         />
                   </TabsContent>
                   <TabsContent value="file" className="pt-4">
-                     <Label htmlFor="resumeFile">Upload a .pdf, .docx, .doc, or .txt file</Label>
+                     <Label htmlFor="resumeFile">Upload a .pdf or .txt file</Label>
                      <Input
                         id="resumeFile"
                         type="file"
-                        accept=".pdf,.docx,.doc,.txt"
+                        accept=".pdf,.txt"
                         {...form.register("resumeFile")}
                         />
                   </TabsContent>
@@ -239,11 +229,11 @@ export default function Home() {
                           />
                     </TabsContent>
                     <TabsContent value="file" className="pt-4">
-                        <Label htmlFor="jobDescriptionFile">Upload a .pdf, .docx, .doc, or .txt file</Label>
+                        <Label htmlFor="jobDescriptionFile">Upload a .pdf or .txt file</Label>
                         <Input
                           id="jobDescriptionFile"
                           type="file"
-                          accept=".pdf,.docx,.doc,.txt"
+                          accept=".pdf,.txt"
                           {...form.register("jobDescriptionFile")}
                           />
                     </TabsContent>
