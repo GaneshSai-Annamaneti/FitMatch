@@ -22,7 +22,6 @@ import { Label } from "@/components/ui/label";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = [
-  "application/pdf",
   "text/plain",
   "text/markdown",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
@@ -33,39 +32,83 @@ const ACCEPTED_FILE_TYPES = [
 const singleFileSchema = z
   .any()
   .refine(
-    (files: FileList | undefined) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE,
+    (file: File | undefined) => !file || file.size <= MAX_FILE_SIZE,
     `Max file size is 5MB.`
   )
   .refine(
-    (files: FileList | undefined) => !files || files.length === 0 || ACCEPTED_FILE_TYPES.includes(files?.[0]?.type),
-    "Unsupported file type. Please upload a PDF, DOCX, or text file."
+    (file: File | undefined) => !file || ACCEPTED_FILE_TYPES.includes(file?.type),
+    "Unsupported file type. Please upload a DOCX or text file."
   );
 
 const FormSchema = z.object({
   resumeText: z.string().optional(),
-  resumeFile: singleFileSchema.optional(),
+  resumeFile: z.any().optional(),
   jobDescriptionText: z.string().optional(),
-  jobDescriptionFile: singleFileSchema.optional(),
+  jobDescriptionFile: z.any().optional(),
   resumeInputType: z.enum(['text', 'file']).default('text'),
   jdInputType: z.enum(['text', 'file']).default('text'),
 })
-.refine(data => {
-  if (data.resumeInputType === 'text') {
-    return !!data.resumeText && data.resumeText.trim().length > 0;
-  }
-  return !!data.resumeFile && data.resumeFile.length > 0;
-}, {
-  message: "Resume is required. Please paste text or upload a file.",
-  path: ["resumeFile"],
-})
-.refine(data => {
-  if (data.jdInputType === 'text') {
-    return !!data.jobDescriptionText && data.jobDescriptionText.trim().length > 0;
-  }
-  return !!data.jobDescriptionFile && data.jobDescriptionFile.length > 0;
-}, {
-  message: "Job description is required. Please paste text or upload a file.",
-  path: ["jobDescriptionFile"],
+.superRefine((data, ctx) => {
+    if (data.resumeInputType === 'file') {
+        const file = data.resumeFile?.[0];
+        if (!file) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "A resume file is required.",
+                path: ["resumeFile"],
+            });
+        } else if (file.size > MAX_FILE_SIZE) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `Max file size is 5MB.`,
+                path: ["resumeFile"],
+            });
+        } else if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Unsupported file type. Please upload a DOCX or text file.",
+                path: ["resumeFile"],
+            });
+        }
+    } else {
+        if (!data.resumeText || data.resumeText.trim().length === 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Resume text cannot be empty.",
+                path: ["resumeText"],
+            });
+        }
+    }
+    if (data.jdInputType === 'file') {
+        const file = data.jobDescriptionFile?.[0];
+        if (!file) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "A job description file is required.",
+                path: ["jobDescriptionFile"],
+            });
+        } else if (file.size > MAX_FILE_SIZE) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `Max file size is 5MB.`,
+                path: ["jobDescriptionFile"],
+            });
+        } else if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Unsupported file type. Please upload a DOCX or text file.",
+                path: ["jobDescriptionFile"],
+            });
+        }
+    } else {
+        if (!data.jobDescriptionText || data.jobDescriptionText.trim().length === 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Job description text cannot be empty.",
+                path: ["jobDescriptionText"],
+            });
+        }
+    }
 });
 
 
@@ -131,6 +174,9 @@ export default function Home() {
   }
 
   const { errors } = form.formState;
+  
+  const resumeError = errors.resumeFile || errors.resumeText;
+  const jdError = errors.jobDescriptionFile || errors.jobDescriptionText;
 
   return (
     <div className="flex flex-col min-h-screen bg-background font-body">
@@ -156,7 +202,7 @@ export default function Home() {
                   <CardTitle>Your Resume</CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="text" className="w-full" onValueChange={(v) => { form.setValue('resumeInputType', v as 'text' | 'file'); form.clearErrors("resumeFile")}}>
+                <Tabs defaultValue="text" className="w-full" onValueChange={(v) => { form.setValue('resumeInputType', v as 'text' | 'file'); form.clearErrors(["resumeFile", "resumeText"])}}>
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="text">Text</TabsTrigger>
                     <TabsTrigger value="file">File</TabsTrigger>
@@ -171,17 +217,17 @@ export default function Home() {
                         />
                   </TabsContent>
                   <TabsContent value="file" className="pt-4">
-                     <Label htmlFor="resumeFile">Upload a .pdf, .docx, or .txt file</Label>
+                     <Label htmlFor="resumeFile">Upload a .docx or .txt file</Label>
                      <Input
                         id="resumeFile"
                         type="file"
-                        accept=".pdf,.doc,.docx,.txt,.md"
+                        accept=".doc,.docx,.txt,.md"
                         {...form.register("resumeFile")}
                         />
                   </TabsContent>
                 </Tabs>
-                {errors.resumeFile && (
-                  <p className="text-sm text-destructive mt-2">{errors.resumeFile?.message?.toString()}</p>
+                {resumeError && (
+                  <p className="text-sm text-destructive mt-2">{resumeError?.message?.toString()}</p>
                 )}
               </CardContent>
             </Card>
@@ -191,7 +237,7 @@ export default function Home() {
                   <CardTitle>Job Description</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="text" className="w-full" onValueChange={(v) => {form.setValue('jdInputType', v as 'text' | 'file'); form.clearErrors("jobDescriptionFile")}}>
+                  <Tabs defaultValue="text" className="w-full" onValueChange={(v) => {form.setValue('jdInputType', v as 'text' | 'file'); form.clearErrors(["jobDescriptionFile", "jobDescriptionText"])}}>
                     <TabsList className="grid w-full grid-cols-2">
                       <TabsTrigger value="text">Text</TabsTrigger>
                       <TabsTrigger value="file">File</TabsTrigger>
@@ -206,17 +252,17 @@ export default function Home() {
                           />
                     </TabsContent>
                     <TabsContent value="file" className="pt-4">
-                        <Label htmlFor="jobDescriptionFile">Upload a .pdf, .docx, or .txt file</Label>
+                        <Label htmlFor="jobDescriptionFile">Upload a .docx or .txt file</Label>
                         <Input
                           id="jobDescriptionFile"
                           type="file"
-                          accept=".pdf,.doc,.docx,.txt,.md"
+                          accept=".doc,.docx,.txt,.md"
                           {...form.register("jobDescriptionFile")}
                           />
                     </TabsContent>
                   </Tabs>
-                   {errors.jobDescriptionFile && (
-                      <p className="text-sm text-destructive mt-2">{errors.jobDescriptionFile?.message?.toString()}</p>
+                   {jdError && (
+                      <p className="text-sm text-destructive mt-2">{jdError?.message?.toString()}</p>
                   )}
                 </CardContent>
             </Card>
@@ -261,5 +307,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
