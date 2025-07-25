@@ -28,6 +28,11 @@ const GenerateFitReportOutputSchema = z.object({
         matchedSkills: z.array(z.string()).describe('A list of technical skills from the resume that match the job description.'),
         missingSkills: z.array(z.string()).describe('A list of technical skills required by the job description that are missing from the resume.'),
     }),
+    softSkills: z.object({
+        score: z.number().describe('A score from 0 to 100 for soft skills.'),
+        matchedSkills: z.array(z.string()).describe('A list of soft skills from the resume that match the job description.'),
+        missingSkills: z.array(z.string()).describe('A list of soft skills required by the job description that are missing from the resume.'),
+    }).optional().describe("An analysis of soft skills, only if mentioned in the job description."),
     experience: z.object({
         score: z.number().describe('A score from 0 to 100 for experience.'),
         candidateExperience: z.string().describe('A human-readable string of the experience detected in the resume (e.g., "6 months", "2 years", "5 years and 3 months").'),
@@ -46,6 +51,11 @@ const GenerateFitReportOutputSchema = z.object({
         degree: z.string().describe('The highest relevant degree obtained by the candidate.'),
         requiredDegree: z.string().optional().describe('The degree required by the job description.'),
     }),
+    certifications: z.object({
+        score: z.number().describe('A score from 0 to 100 for certifications match.'),
+        matchedCertifications: z.array(z.string()).describe('A list of certifications from the resume that match the job description.'),
+        missingCertifications: z.array(z.string()).describe('A list of certifications required by the job description that are missing from the resume.'),
+    }).optional().describe("An analysis of certifications, only if mentioned in the job description."),
     summaryReport: z.object({
         strengths: z.array(z.string()).describe('A list of key strengths of the candidate.'),
         weaknesses: z.array(z.string()).describe('A list of key weaknesses or areas for improvement.'),
@@ -75,12 +85,14 @@ const generateFitReportPrompt = ai.definePrompt({
   Instructions:
   1.  **Overall Analysis**: Calculate an overall match score (0-100). Provide a one-word fit assessment (e.g., "Strong", "Moderate", "Weak") and a brief summary.
   2.  **Technical Skills**: Score the technical skills match (0-100). List the skills that match the job description and those that are required but missing.
-  3.  **Experience**: Score the experience match (0-100). Extract the candidate's years of experience and compare it to what's required (if specified). Determine the candidate's experience level (e.g., "Entry", "Mid-Level") and assess the fit. IMPORTANT: Express the candidate's experience and the required experience in human-readable strings like "6 months", "1 year and 6 months", or "5 years". Do not use fractional years like "0.83 years". If years are not specified in the job description, make a reasonable estimate for the required experience based on the role.
-  4.  **Role Fit**: Score the role fit (0-100). Identify the candidate's current role and the target role. Assess the alignment between them.
-  5.  **Education**: Score the education match (0-100). Identify the candidate's highest degree and the required degree (if specified).
-  6.  **Summary Report**: Provide a list of key strengths, weaknesses, and a final verdict on the candidate's suitability.
-  7.  **Recommendations**: Provide a list of actionable recommendations for the candidate to improve their fit for this role or future roles.
-  8.  **Considerations**: Provide a list of key points for a hiring manager to consider when evaluating this candidate.
+  3.  **Soft Skills (Conditional)**: If the job description mentions specific soft skills (e.g., communication, teamwork, leadership), create a 'softSkills' object. Score the match (0-100), list matched skills, and list missing skills. If soft skills are not mentioned in the JD, OMIT this object from the output.
+  4.  **Experience**: Score the experience match (0-100). Extract the candidate's years of experience and compare it to what's required (if specified). Determine the candidate's experience level (e.g., "Entry", "Mid-Level") and assess the fit. IMPORTANT: Express the candidate's experience and the required experience in human-readable strings like "6 months", "1 year and 6 months", or "5 years". Do not use fractional years like "0.83 years". If years are not specified in the job description, make a reasonable estimate for the required experience based on the role.
+  5.  **Role Fit**: Score the role fit (0-100). Identify the candidate's current role and the target role. Assess the alignment between them.
+  6.  **Education**: Score the education match (0-100). Identify the candidate's highest degree and the required degree (if specified).
+  7.  **Certifications (Conditional)**: If the job description mentions specific certifications (e.g., PMP, AWS Certified Developer), create a 'certifications' object. Score the match (0-100), list matched certifications, and list missing certifications. If certifications are not mentioned in the JD, OMIT this object from the output.
+  8.  **Summary Report**: Provide a list of key strengths, weaknesses, and a final verdict on the candidate's suitability.
+  9.  **Recommendations**: Provide a list of actionable recommendations for the candidate to improve their fit for this role or future roles.
+  10. **Considerations**: Provide a list of key points for a hiring manager to consider when evaluating this candidate.
 
   Provide your analysis in the structured JSON format.`,
 });

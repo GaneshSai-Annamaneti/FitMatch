@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, XCircle, Briefcase, GraduationCap, Wrench, Clock, Lightbulb, AlertTriangle, Target, Medal, ThumbsDown, FileText } from "lucide-react";
+import { CheckCircle2, XCircle, Briefcase, GraduationCap, Wrench, Clock, Lightbulb, AlertTriangle, Target, Medal, ThumbsDown, FileText, Smile, Star } from "lucide-react";
 import { ReportCard } from "./report-card";
 
 interface ReportDisplayProps {
@@ -11,7 +11,7 @@ interface ReportDisplayProps {
 }
 
 export function ReportDisplay({ report }: ReportDisplayProps) {
-    const { overallAnalysis, technicalSkills, experience, roleFit, education, summaryReport, recommendations, considerations } = report;
+    const { overallAnalysis, technicalSkills, softSkills, experience, roleFit, education, certifications, summaryReport, recommendations, considerations } = report;
 
     const getFitColor = (fit: string) => {
         const lowerFit = fit.toLowerCase();
@@ -30,6 +30,47 @@ export function ReportDisplay({ report }: ReportDisplayProps) {
             <span className="text-muted-foreground">{children}</span>
         </li>
     );
+    
+    const SkillsOrCertsCard = ({
+        title,
+        icon,
+        data,
+    }: {
+        title: string,
+        icon: React.ElementType,
+        data: { score: number; matchedSkills: string[]; missingSkills: string[] } | { score: number; matchedCertifications: string[]; missingCertifications: string[] },
+    }) => {
+         const matchedItems = 'matchedSkills' in data ? data.matchedSkills : data.matchedCertifications;
+         const missingItems = 'missingSkills' in data ? data.missingSkills : data.missingCertifications;
+
+        return (
+             <ReportCard title={`${title} (${data.score}%)`} icon={icon}>
+                <div className="space-y-4">
+                    <Progress value={data.score} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Matched</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {matchedItems.length > 0 ? 
+                                    matchedItems.map(item => <Badge variant="secondary" key={item}>{item}</Badge>) :
+                                    <p className="text-sm text-muted-foreground">None found.</p>
+                                }
+                            </div>
+                        </div>
+                         <div>
+                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-2"><XCircle className="h-4 w-4 text-red-500" /> Missing</h4>
+                            <div className="flex flex-wrap gap-2">
+                                 {missingItems.length > 0 ? 
+                                    missingItems.map(item => <Badge variant="destructive" key={item}>{item}</Badge>) :
+                                    <p className="text-sm text-muted-foreground">None required.</p>
+                                 }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </ReportCard>
+        )
+    }
 
     return (
         <div className="space-y-8">
@@ -76,31 +117,27 @@ export function ReportDisplay({ report }: ReportDisplayProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                <ReportCard title={`Technical Skills (${technicalSkills.score}%)`} icon={Wrench}>
-                    <div className="space-y-4">
-                        <Progress value={technicalSkills.score} />
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <h4 className="font-semibold text-sm flex items-center gap-2 mb-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Matched Skills</h4>
-                                <div className="flex flex-wrap gap-2">
-                                    {technicalSkills.matchedSkills.length > 0 ? 
-                                        technicalSkills.matchedSkills.map(skill => <Badge variant="secondary" key={skill}>{skill}</Badge>) :
-                                        <p className="text-sm text-muted-foreground">No matching skills found.</p>
-                                    }
-                                </div>
-                            </div>
-                             <div>
-                                <h4 className="font-semibold text-sm flex items-center gap-2 mb-2"><XCircle className="h-4 w-4 text-red-500" /> Missing Skills</h4>
-                                <div className="flex flex-wrap gap-2">
-                                     {technicalSkills.missingSkills.length > 0 ? 
-                                        technicalSkills.missingSkills.map(skill => <Badge variant="destructive" key={skill}>{skill}</Badge>) :
-                                        <p className="text-sm text-muted-foreground">No missing skills identified.</p>
-                                     }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </ReportCard>
+                 <SkillsOrCertsCard 
+                    title="Technical Skills"
+                    icon={Wrench}
+                    data={{
+                        score: technicalSkills.score,
+                        matchedSkills: technicalSkills.matchedSkills,
+                        missingSkills: technicalSkills.missingSkills,
+                    }}
+                />
+
+                {softSkills && (
+                    <SkillsOrCertsCard 
+                        title="Soft Skills"
+                        icon={Smile}
+                        data={{
+                            score: softSkills.score,
+                            matchedSkills: softSkills.matchedSkills,
+                            missingSkills: softSkills.missingSkills,
+                        }}
+                    />
+                )}
 
                 <ReportCard title={`Experience (${experience.score}%)`} icon={Clock}>
                      <div className="space-y-4">
@@ -136,6 +173,18 @@ export function ReportDisplay({ report }: ReportDisplayProps) {
                         </div>
                     </div>
                 </ReportCard>
+
+                {certifications && (
+                    <SkillsOrCertsCard 
+                        title="Certifications"
+                        icon={Star}
+                        data={{
+                            score: certifications.score,
+                            matchedCertifications: certifications.matchedCertifications,
+                            missingCertifications: certifications.missingCertifications,
+                        }}
+                    />
+                )}
             </div>
         </div>
     );
