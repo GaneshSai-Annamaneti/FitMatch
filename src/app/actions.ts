@@ -20,7 +20,7 @@ async function getTextFromFile(file: File): Promise<string> {
     ) {
       const { value } = await mammoth.extractRawText({ buffer });
       return value;
-    } else if (file.type.startsWith("text/") || file.type === "text/markdown") {
+    } else if (file.type.startsWith("text/") || file.type === "text/markdown" || file.type === "text/csv") {
       return buffer.toString("utf-8");
     }
   } catch (error: any) {
@@ -33,7 +33,7 @@ async function getTextFromFile(file: File): Promise<string> {
       throw new Error(`Sorry, PDF file processing is temporarily unavailable. Please use a DOCX or TXT file.`);
   }
   
-  throw new Error(`Unsupported file type: ${file.type || 'unknown'}. Please upload a DOCX, or TXT file.`);
+  throw new Error(`Unsupported file type: ${file.type || 'unknown'}. Please upload a DOCX, TXT, MD, or CSV file.`);
 }
 
 export async function analyzeDocuments(formData: FormData): Promise<{ data: GenerateFitReportOutput | null; error: string | null }> {

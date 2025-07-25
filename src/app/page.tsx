@@ -24,21 +24,11 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = [
   "text/plain",
   "text/markdown",
+  "text/csv",
+  "application/pdf", // Temporarily accept on client to provide a better error message from server
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
   "application/msword", // .doc
 ];
-
-// Zod schema for a single file, to be used inside the main form schema.
-const singleFileSchema = z
-  .any()
-  .refine(
-    (file: File | undefined) => !file || file.size <= MAX_FILE_SIZE,
-    `Max file size is 5MB.`
-  )
-  .refine(
-    (file: File | undefined) => !file || ACCEPTED_FILE_TYPES.includes(file?.type),
-    "Unsupported file type. Please upload a DOCX or text file."
-  );
 
 const FormSchema = z.object({
   resumeText: z.string().optional(),
@@ -66,7 +56,7 @@ const FormSchema = z.object({
         } else if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: "Unsupported file type. Please upload a DOCX or text file.",
+                message: "Unsupported file type. Please upload a DOCX, TXT, MD, or CSV file.",
                 path: ["resumeFile"],
             });
         }
@@ -96,7 +86,7 @@ const FormSchema = z.object({
         } else if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: "Unsupported file type. Please upload a DOCX or text file.",
+                message: "Unsupported file type. Please upload a DOCX, TXT, MD, or CSV file.",
                 path: ["jobDescriptionFile"],
             });
         }
@@ -217,11 +207,11 @@ export default function Home() {
                         />
                   </TabsContent>
                   <TabsContent value="file" className="pt-4">
-                     <Label htmlFor="resumeFile">Upload a .docx or .txt file</Label>
+                     <Label htmlFor="resumeFile">Upload a .docx, .txt, .md, or .csv file</Label>
                      <Input
                         id="resumeFile"
                         type="file"
-                        accept=".doc,.docx,.txt,.md"
+                        accept=".doc,.docx,.txt,.md,.csv,.pdf"
                         {...form.register("resumeFile")}
                         />
                   </TabsContent>
@@ -252,11 +242,11 @@ export default function Home() {
                           />
                     </TabsContent>
                     <TabsContent value="file" className="pt-4">
-                        <Label htmlFor="jobDescriptionFile">Upload a .docx or .txt file</Label>
+                        <Label htmlFor="jobDescriptionFile">Upload a .docx, .txt, .md, or .csv file</Label>
                         <Input
                           id="jobDescriptionFile"
                           type="file"
-                          accept=".doc,.docx,.txt,.md"
+                          accept=".doc,.docx,.txt,.md,.csv,.pdf"
                           {...form.register("jobDescriptionFile")}
                           />
                     </TabsContent>
