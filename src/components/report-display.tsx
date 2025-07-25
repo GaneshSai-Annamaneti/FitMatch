@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, Briefcase, GraduationCap, Wrench, Rocket, Clock } from "lucide-react";
 import { ReportCard } from "./report-card";
+import { cn } from "@/lib/utils";
 
 interface ReportDisplayProps {
     report: GenerateFitReportOutput;
