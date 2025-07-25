@@ -12,20 +12,21 @@ async function getTextFromFile(file: File): Promise<string> {
   if (buffer.length === 0) {
     throw new Error(`Failed to read content from file "${file.name}".`);
   }
+  
+  const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  const isDocx = file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || file.name.toLowerCase().endsWith(".docx");
+  const isDoc = file.type === "application/msword" || file.name.toLowerCase().endsWith(".doc");
+  const isText = file.type.startsWith("text/") || file.name.toLowerCase().endsWith(".md") || file.name.toLowerCase().endsWith(".csv") || file.name.toLowerCase().endsWith(".txt");
 
   try {
-    if (file.type === "application/pdf") {
-      // Dynamically import pdf-parse ONLY when a PDF is being processed.
+    if (isPdf) {
       const pdf = (await import('pdf-parse')).default;
       const data = await pdf(buffer);
       return data.text;
-    } else if (
-      file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-      file.type === "application/msword"
-    ) {
+    } else if (isDocx || isDoc) {
       const { value } = await mammoth.extractRawText({ buffer });
       return value;
-    } else if (file.type.startsWith("text/") || file.type === "text/markdown" || file.type === "text/csv") {
+    } else if (isText) {
       return buffer.toString("utf-8");
     }
   } catch (error: any) {
