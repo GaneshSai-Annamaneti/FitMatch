@@ -25,10 +25,12 @@ const FormSchema = z.object({
   jobDescriptionText: z.string().optional(),
   resumeFile: z.any().optional(),
   jobFile: z.any().optional(),
-}).refine((data) => (data.resumeText && data.resumeText.length >= 100) || (data.resumeFile && data.resumeFile.length > 0), {
+})
+.refine((data) => (data.resumeText && data.resumeText.length >= 100) || (data.resumeFile && data.resumeFile[0]), {
   message: "Please provide a resume as text (min 100 chars) or upload a file.",
   path: ["resumeFile"],
-}).refine((data) => (data.jobDescriptionText && data.jobDescriptionText.length >= 100) || (data.jobFile && data.jobFile.length > 0), {
+})
+.refine((data) => (data.jobDescriptionText && data.jobDescriptionText.length >= 100) || (data.jobFile && data.jobFile[0]), {
   message: "Please provide a job description as text (min 100 chars) or upload a file.",
   path: ["jobFile"],
 });
