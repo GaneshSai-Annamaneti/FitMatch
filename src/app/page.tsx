@@ -1,11 +1,11 @@
+
 "use client";
 
 import { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import mammoth from "mammoth";
-import { getFitReport } from "@/app/actions";
+import { getFitReport, getTextFromFile } from "@/app/actions";
 import { type GenerateFitReportOutput } from "@/ai/flows/generate-fit-report";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,9 +22,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const FormSchema = z.object({
-  resumeText: z.string().min(100, "Please provide a resume as text (min 100 chars)."),
-  jobDescriptionText: z.string().min(100, "Please provide a job description as text (min 100 chars)."),
+  resumeText: z.string().optional(),
+  jobDescriptionText: z.string().optional(),
+  resumeFile: z.any().optional(),
+  jobFile: z.any().optional(),
+})
+.refine(data => (data.resumeText && data.resumeText.length > 0) || (data.resumeFile && data.resumeFile.length > 0), {
+  message: "Please provide a resume as text or upload a file.",
+  path: ["resumeText"], 
+})
+.refine(data => (data.jobDescriptionText && data.jobDescriptionText.length > 0) || (data.jobFile && data.jobFile.length > 0), {
+  message: "Please provide a job description as text or upload a file.",
+  path: ["jobDescriptionText"],
 });
+
 
 type FormValues = z.infer<typeof FormSchema>;
 
@@ -43,61 +54,69 @@ export default function Home() {
     },
   });
 
-  const readFileAsText = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (file.name.endsWith('.docx')) {
-          mammoth.extractRawText({ arrayBuffer: reader.result as ArrayBuffer })
-            .then(result => resolve(result.value))
-            .catch(reject);
-        } else {
-          resolve(reader.result as string);
-        }
-      };
-      reader.onerror = () => reject(reader.error);
-      
-      if (file.name.endsWith('.docx')) {
-        reader.readAsArrayBuffer(file);
-      } else {
-        reader.readAsText(file);
-      }
-    });
-  };
-
-  const handleFileChange = async (
-    e: React.ChangeEvent<HTMLInputElement>, 
-    fieldName: keyof FormValues,
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    fieldName: "resumeFile" | "jobFile",
     setFileName: (name: string) => void
   ) => {
     const file = e.target.files?.[0];
     if (file) {
       setFileName(file.name);
-      try {
-        const text = await readFileAsText(file);
-        form.setValue(fieldName, text, { shouldValidate: true });
-      } catch (err) {
-        toast({ variant: "destructive", title: `Error reading ${fieldName} file`, description: "Could not read the provided file." });
-        setFileName("");
-      }
+      form.setValue(fieldName, e.target.files);
+    } else {
+      setFileName("");
+      form.setValue(fieldName, null);
     }
   };
-
+  
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     setIsLoading(true);
     setAnalysisResult(null);
 
-    const { data: result, error } = await getFitReport(data.resumeText, data.jobDescriptionText);
-    setIsLoading(false);
+    let resumeText = data.resumeText ?? "";
+    let jobDescriptionText = data.jobDescriptionText ?? "";
 
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Analysis Failed",
-        description: error,
-      });
-    } else if (result) {
-      setAnalysisResult(result);
+    try {
+      if (data.resumeFile && data.resumeFile.length > 0) {
+        const formData = new FormData();
+        formData.append('file', data.resumeFile[0]);
+        const { data: text, error } = await getTextFromFile(formData);
+        if (error || !text) {
+          toast({ variant: "destructive", title: "Error reading resume file", description: error || "Could not extract text from file." });
+          setIsLoading(false);
+          return;
+        }
+        resumeText = text;
+      }
+
+      if (data.jobFile && data.jobFile.length > 0) {
+        const formData = new FormData();
+        formData.append('file', data.jobFile[0]);
+        const { data: text, error } = await getTextFromFile(formData);
+        if (error || !text) {
+          toast({ variant: "destructive", title: "Error reading job file", description: error || "Could not extract text from file." });
+          setIsLoading(false);
+          return;
+        }
+        jobDescriptionText = text;
+      }
+      
+      const { data: result, error } = await getFitReport(resumeText, jobDescriptionText);
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Analysis Failed",
+          description: error,
+        });
+      } else if (result) {
+        setAnalysisResult(result);
+      }
+    } catch (err) {
+      console.error(err);
+      toast({ variant: "destructive", title: "An unexpected error occurred", description: "Please try again." });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -145,10 +164,10 @@ export default function Home() {
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
                         <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p className="text-xs text-muted-foreground">TXT, DOCX</p>
+                        <p className="text-xs text-muted-foreground">PDF, DOC, DOCX, TXT, MD, CSV</p>
                         {resumeFileName && <p className="text-xs text-primary mt-2">{resumeFileName}</p>}
                       </div>
-                      <Input id="resumeFile" type="file" className="hidden" accept=".txt,.docx" onChange={(e) => handleFileChange(e, "resumeText", setResumeFileName)} />
+                      <Input id="resumeFile" type="file" className="hidden" accept=".pdf,.doc,.docx,.txt,.md,.csv" onChange={(e) => handleFileChange(e, "resumeFile", setResumeFileName)} />
                     </Label>
                   </TabsContent>
                 </Tabs>
@@ -180,10 +199,10 @@ export default function Home() {
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
                         <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p className="text-xs text-muted-foreground">TXT, DOCX</p>
+                        <p className="text-xs text-muted-foreground">PDF, DOC, DOCX, TXT, MD, CSV</p>
                         {jobFileName && <p className="text-xs text-primary mt-2">{jobFileName}</p>}
                       </div>
-                      <Input id="jobFile" type="file" className="hidden" accept=".txt,.docx" onChange={(e) => handleFileChange(e, "jobDescriptionText", setJobFileName)} />
+                      <Input id="jobFile" type="file" className="hidden" accept=".pdf,.doc,.docx,.txt,.md,.csv" onChange={(e) => handleFileChange(e, "jobFile", setJobFileName)} />
                     </Label>
                   </TabsContent>
                 </Tabs>
@@ -246,3 +265,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
