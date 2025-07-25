@@ -16,6 +16,10 @@ async function getTextFromFile(file: File): Promise<string> {
       const pdf = pdfParse.default || pdfParse;
       const data = await pdf(buffer);
       return data.text;
+    } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+      const mammoth = await import('mammoth');
+      const result = await mammoth.extractRawText({ buffer });
+      return result.value;
     } else if (fileName.endsWith('.txt')) {
       return buffer.toString("utf-8");
     }
@@ -24,7 +28,7 @@ async function getTextFromFile(file: File): Promise<string> {
     throw new Error(`Failed to parse file "${file.name}". It might be corrupted or in an unsupported format.`);
   }
   
-  throw new Error(`Unsupported file type for "${file.name}". Please upload a PDF or TXT file.`);
+  throw new Error(`Unsupported file type for "${file.name}". Please upload a PDF, DOCX, DOC, or TXT file.`);
 }
 
 export async function analyzeDocuments(formData: FormData): Promise<{ data: GenerateFitReportOutput | null; error: string | null }> {
@@ -69,3 +73,5 @@ export async function analyzeDocuments(formData: FormData): Promise<{ data: Gene
     return { data: null, error: e.message || "An unexpected error occurred during analysis." };
   }
 }
+
+    

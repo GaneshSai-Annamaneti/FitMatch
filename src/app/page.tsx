@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_FILE_EXTENSIONS = [".pdf", ".txt"];
+const ACCEPTED_FILE_EXTENSIONS = [".pdf", ".txt", ".docx", ".doc"];
 
 
 const FormSchema = z.object({
@@ -194,11 +194,11 @@ export default function Home() {
                         />
                   </TabsContent>
                   <TabsContent value="file" className="pt-4">
-                     <Label htmlFor="resumeFile">Upload a .pdf or .txt file</Label>
+                     <Label htmlFor="resumeFile">Upload a .pdf, .docx, or .txt file</Label>
                      <Input
                         id="resumeFile"
                         type="file"
-                        accept=".pdf,.txt"
+                        accept=".pdf,.doc,.docx,.txt"
                         {...form.register("resumeFile")}
                         />
                   </TabsContent>
@@ -229,11 +229,11 @@ export default function Home() {
                           />
                     </TabsContent>
                     <TabsContent value="file" className="pt-4">
-                        <Label htmlFor="jobDescriptionFile">Upload a .pdf or .txt file</Label>
+                        <Label htmlFor="jobDescriptionFile">Upload a .pdf, .docx, or .txt file</Label>
                         <Input
                           id="jobDescriptionFile"
                           type="file"
-                          accept=".pdf,.txt"
+                          accept=".pdf,.doc,.docx,.txt"
                           {...form.register("jobDescriptionFile")}
                           />
                     </TabsContent>
@@ -284,3 +284,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
