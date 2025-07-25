@@ -2,8 +2,6 @@
 "use server";
 import { generateFitReport, type GenerateFitReportOutput } from "@/ai/flows/generate-fit-report";
 import mammoth from "mammoth";
-import pdf from "pdf-parse";
-
 
 async function getTextFromFile(file: File): Promise<string> {
   if (!file || file.size === 0) {
@@ -17,6 +15,8 @@ async function getTextFromFile(file: File): Promise<string> {
 
   try {
     if (file.type === "application/pdf") {
+      // Dynamically import pdf-parse ONLY when a PDF is being processed.
+      const pdf = (await import('pdf-parse')).default;
       const data = await pdf(buffer);
       return data.text;
     } else if (
