@@ -27,19 +27,21 @@ const ACCEPTED_FILE_TYPES = [
   "application/msword",
   "text/plain",
   "text/markdown",
+  "text/csv",
 ];
+
+// Use z.any() for file inputs to avoid server-side errors,
+// since FileList is a browser-only API.
+const fileSchema = z.any()
+  .refine((files) => files?.length > 0 ? files?.[0]?.size <= MAX_FILE_SIZE : true, `Max file size is 5MB.`)
+  .refine((files) => files?.length > 0 ? ACCEPTED_FILE_TYPES.includes(files?.[0]?.type) : true, "Unsupported file type.");
+
 
 const FormSchema = z.object({
   resumeText: z.string().optional(),
-  resumeFile: z.any()
-    .optional()
-    .refine((files: FileList) => files?.length > 0 ? files?.[0]?.size <= MAX_FILE_SIZE : true, `Max file size is 5MB.`)
-    .refine((files: FileList) => files?.length > 0 ? ACCEPTED_FILE_TYPES.includes(files?.[0]?.type) : true, "Unsupported file type."),
+  resumeFile: fileSchema.optional(),
   jobDescriptionText: z.string().optional(),
-  jobDescriptionFile: z.any()
-    .optional()
-    .refine((files: FileList) => files?.length > 0 ? files?.[0]?.size <= MAX_FILE_SIZE : true, `Max file size is 5MB.`)
-    .refine((files: FileList) => files?.length > 0 ? ACCEPTED_FILE_TYPES.includes(files?.[0]?.type) : true, "Unsupported file type."),
+  jobDescriptionFile: fileSchema.optional(),
   resumeInputType: z.enum(['text', 'file']).default('text'),
   jdInputType: z.enum(['text', 'file']).default('text'),
 })
@@ -163,17 +165,17 @@ export default function Home() {
                         />
                   </TabsContent>
                   <TabsContent value="file" className="pt-4">
-                     <Label htmlFor="resumeFile">Upload a .pdf, .docx, or .txt file</Label>
+                     <Label htmlFor="resumeFile">Upload a .pdf, .docx, .doc, .txt, .md, or .csv file</Label>
                      <Input
                         id="resumeFile"
                         type="file"
-                        accept=".pdf,.doc,.docx,.txt,.md"
+                        accept=".pdf,.doc,.docx,.txt,.md,.csv"
                         {...form.register("resumeFile")}
                         />
                   </TabsContent>
                 </Tabs>
                 {(errors.resumeText || errors.resumeFile) && (
-                  <p className="text-sm text-destructive mt-2">{errors.resumeText?.message || errors.resumeFile?.message}</p>
+                  <p className="text-sm text-destructive mt-2">{errors.resumeText?.message || errors.resumeFile?.message?.toString()}</p>
                 )}
               </CardContent>
             </Card>
@@ -198,17 +200,17 @@ export default function Home() {
                           />
                     </TabsContent>
                     <TabsContent value="file" className="pt-4">
-                        <Label htmlFor="jobDescriptionFile">Upload a .pdf, .docx, or .txt file</Label>
+                        <Label htmlFor="jobDescriptionFile">Upload a .pdf, .docx, .doc, .txt, .md, or .csv file</Label>
                         <Input
                           id="jobDescriptionFile"
                           type="file"
-                          accept=".pdf,.doc,.docx,.txt,.md"
+                          accept=".pdf,.doc,.docx,.txt,.md,.csv"
                           {...form.register("jobDescriptionFile")}
                           />
                     </TabsContent>
                   </Tabs>
                    {(errors.jobDescriptionText || errors.jobDescriptionFile) && (
-                      <p className="text-sm text-destructive mt-2">{errors.jobDescriptionText?.message || errors.jobDescriptionFile?.message}</p>
+                      <p className="text-sm text-destructive mt-2">{errors.jobDescriptionText?.message || errors.jobDescriptionFile?.message?.toString()}</p>
                   )}
                 </CardContent>
             </Card>
