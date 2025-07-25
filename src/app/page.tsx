@@ -11,15 +11,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { Loader2, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Loader2, ThumbsUp, ThumbsDown, Upload } from "lucide-react";
 import { ScoreDisplay } from "@/components/score-display";
 import { ReportCard } from "@/components/report-card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const FormSchema = z.object({
-  resumeText: z.string().min(100, "Resume must be at least 100 characters long."),
-  jobDescriptionText: z.string().min(100, "Job description must be at least 100 characters long."),
+  resumeText: z.string().optional(),
+  jobDescriptionText: z.string().optional(),
+  resumeFile: z.any().optional(),
+  jobFile: z.any().optional(),
+}).refine(data => (data.resumeText && data.resumeText.length >= 100) || (data.resumeFile && data.resumeFile.length > 0), {
+  message: "Please provide a resume as text (min 100 chars) or upload a file.",
+  path: ["resumeText"],
+}).refine(data => (data.jobDescriptionText && data.jobDescriptionText.length >= 100) || (data.jobFile && data.jobFile.length > 0), {
+  message: "Please provide a job description as text (min 100 chars) or upload a file.",
+  path: ["jobDescriptionText"],
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -27,6 +38,8 @@ type FormValues = z.infer<typeof FormSchema>;
 export default function Home() {
   const [analysisResult, setAnalysisResult] = useState<GenerateFitReportOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [resumeFileName, setResumeFileName] = useState("");
+  const [jobFileName, setJobFileName] = useState("");
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -37,10 +50,42 @@ export default function Home() {
     },
   });
 
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    });
+  };
+
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     setIsLoading(true);
     setAnalysisResult(null);
-    const { data: result, error } = await getFitReport(data.resumeText, data.jobDescriptionText);
+
+    let resumeText = data.resumeText || "";
+    if (data.resumeFile && data.resumeFile.length > 0) {
+      try {
+        resumeText = await readFileAsText(data.resumeFile[0]);
+      } catch (e) {
+        toast({ variant: "destructive", title: "Error Reading Resume File", description: "Could not read the provided resume file." });
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    let jobDescriptionText = data.jobDescriptionText || "";
+    if (data.jobFile && data.jobFile.length > 0) {
+      try {
+        jobDescriptionText = await readFileAsText(data.jobFile[0]);
+      } catch (e) {
+        toast({ variant: "destructive", title: "Error Reading Job File", description: "Could not read the provided job description file." });
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    const { data: result, error } = await getFitReport(resumeText, jobDescriptionText);
     setIsLoading(false);
 
     if (error) {
@@ -76,14 +121,33 @@ export default function Home() {
             <Card className="shadow-md">
               <CardHeader>
                 <CardTitle>Your Resume</CardTitle>
-                <CardDescription>Paste the full text of your resume here.</CardDescription>
+                <CardDescription>Paste the text or upload a file.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Textarea
-                  placeholder="Paste your resume..."
-                  className="min-h-[300px] text-sm"
-                  {...form.register("resumeText")}
-                />
+                <Tabs defaultValue="text" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="text">Text</TabsTrigger>
+                    <TabsTrigger value="file">File</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="text" className="mt-4">
+                    <Textarea
+                      placeholder="Paste your resume..."
+                      className="min-h-[260px] text-sm"
+                      {...form.register("resumeText")}
+                    />
+                  </TabsContent>
+                  <TabsContent value="file" className="mt-4">
+                    <Label htmlFor="resumeFile" className="cursor-pointer flex flex-col items-center justify-center w-full min-h-[260px] border-2 border-dashed rounded-lg">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
+                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                        <p className="text-xs text-muted-foreground">TXT, RTF, DOCX, or PDF</p>
+                        {resumeFileName && <p className="text-xs text-primary mt-2">{resumeFileName}</p>}
+                      </div>
+                      <Input id="resumeFile" type="file" className="hidden" {...form.register("resumeFile")} onChange={(e) => setResumeFileName(e.target.files?.[0]?.name || "")} />
+                    </Label>
+                  </TabsContent>
+                </Tabs>
                 {form.formState.errors.resumeText && (
                   <p className="text-sm text-destructive mt-2">{form.formState.errors.resumeText.message}</p>
                 )}
@@ -92,14 +156,33 @@ export default function Home() {
             <Card className="shadow-md">
               <CardHeader>
                 <CardTitle>Job Description</CardTitle>
-                <CardDescription>Paste the full text of the job description.</CardDescription>
+                <CardDescription>Paste the text or upload a file.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Textarea
-                  placeholder="Paste the job description..."
-                  className="min-h-[300px] text-sm"
-                  {...form.register("jobDescriptionText")}
-                />
+                 <Tabs defaultValue="text" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="text">Text</TabsTrigger>
+                    <TabsTrigger value="file">File</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="text" className="mt-4">
+                    <Textarea
+                      placeholder="Paste the job description..."
+                      className="min-h-[260px] text-sm"
+                      {...form.register("jobDescriptionText")}
+                    />
+                  </TabsContent>
+                  <TabsContent value="file" className="mt-4">
+                    <Label htmlFor="jobFile" className="cursor-pointer flex flex-col items-center justify-center w-full min-h-[260px] border-2 border-dashed rounded-lg">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
+                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                        <p className="text-xs text-muted-foreground">TXT, RTF, DOCX, or PDF</p>
+                        {jobFileName && <p className="text-xs text-primary mt-2">{jobFileName}</p>}
+                      </div>
+                      <Input id="jobFile" type="file" className="hidden" {...form.register("jobFile")} onChange={(e) => setJobFileName(e.target.files?.[0]?.name || "")} />
+                    </Label>
+                  </TabsContent>
+                </Tabs>
                 {form.formState.errors.jobDescriptionText && (
                   <p className="text-sm text-destructive mt-2">{form.formState.errors.jobDescriptionText.message}</p>
                 )}
