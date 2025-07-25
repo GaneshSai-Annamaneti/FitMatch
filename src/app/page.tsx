@@ -22,13 +22,13 @@ import { Label } from "@/components/ui/label";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = [
-  "text/plain",
-  "text/markdown",
-  "text/csv",
-  "application/pdf", // Temporarily accept on client to provide a better error message from server
+  "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
   "application/msword", // .doc
+  "text/plain", // .txt
 ];
+const ACCEPTED_FILE_EXTENSIONS = [".pdf", ".docx", ".doc", ".txt"];
+
 
 const FormSchema = z.object({
   resumeText: z.string().optional(),
@@ -39,62 +39,50 @@ const FormSchema = z.object({
   jdInputType: z.enum(['text', 'file']).default('text'),
 })
 .superRefine((data, ctx) => {
-    if (data.resumeInputType === 'file') {
-        const file = data.resumeFile?.[0];
+    const validateFile = (file: File | undefined, fieldName: "resumeFile" | "jobDescriptionFile") => {
         if (!file) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: "A resume file is required.",
-                path: ["resumeFile"],
+                message: `A file is required.`,
+                path: [fieldName],
             });
-        } else if (file.size > MAX_FILE_SIZE) {
+            return;
+        }
+        if (file.size > MAX_FILE_SIZE) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: `Max file size is 5MB.`,
-                path: ["resumeFile"],
-            });
-        } else if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Unsupported file type. Please upload a DOCX, TXT, MD, or CSV file.",
-                path: ["resumeFile"],
+                path: [fieldName],
             });
         }
+        const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
+        if (!ACCEPTED_FILE_TYPES.includes(file.type) && !ACCEPTED_FILE_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext))) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Unsupported file. Please upload a PDF, DOCX, DOC, or TXT file.",
+                path: [fieldName],
+            });
+        }
+    };
+
+    if (data.resumeInputType === 'file') {
+        validateFile(data.resumeFile?.[0], "resumeFile");
     } else {
-        if (!data.resumeText || data.resumeText.trim().length === 0) {
+        if (!data.resumeText || data.resumeText.trim().length < 50) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: "Resume text cannot be empty.",
+                message: "Resume text must be at least 50 characters.",
                 path: ["resumeText"],
             });
         }
     }
     if (data.jdInputType === 'file') {
-        const file = data.jobDescriptionFile?.[0];
-        if (!file) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "A job description file is required.",
-                path: ["jobDescriptionFile"],
-            });
-        } else if (file.size > MAX_FILE_SIZE) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Max file size is 5MB.`,
-                path: ["jobDescriptionFile"],
-            });
-        } else if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Unsupported file type. Please upload a DOCX, TXT, MD, or CSV file.",
-                path: ["jobDescriptionFile"],
-            });
-        }
+        validateFile(data.jobDescriptionFile?.[0], "jobDescriptionFile");
     } else {
-        if (!data.jobDescriptionText || data.jobDescriptionText.trim().length === 0) {
+        if (!data.jobDescriptionText || data.jobDescriptionText.trim().length < 50) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: "Job description text cannot be empty.",
+                message: "Job description must be at least 50 characters.",
                 path: ["jobDescriptionText"],
             });
         }
@@ -207,11 +195,11 @@ export default function Home() {
                         />
                   </TabsContent>
                   <TabsContent value="file" className="pt-4">
-                     <Label htmlFor="resumeFile">Upload a .docx, .txt, .md, or .csv file</Label>
+                     <Label htmlFor="resumeFile">Upload a .pdf, .docx, .doc, or .txt file</Label>
                      <Input
                         id="resumeFile"
                         type="file"
-                        accept=".doc,.docx,.txt,.md,.csv,.pdf"
+                        accept=".pdf,.docx,.doc,.txt"
                         {...form.register("resumeFile")}
                         />
                   </TabsContent>
@@ -242,11 +230,11 @@ export default function Home() {
                           />
                     </TabsContent>
                     <TabsContent value="file" className="pt-4">
-                        <Label htmlFor="jobDescriptionFile">Upload a .docx, .txt, .md, or .csv file</Label>
+                        <Label htmlFor="jobDescriptionFile">Upload a .pdf, .docx, .doc, or .txt file</Label>
                         <Input
                           id="jobDescriptionFile"
                           type="file"
-                          accept=".doc,.docx,.txt,.md,.csv,.pdf"
+                          accept=".pdf,.docx,.doc,.txt"
                           {...form.register("jobDescriptionFile")}
                           />
                     </TabsContent>
