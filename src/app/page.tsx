@@ -25,12 +25,12 @@ const FormSchema = z.object({
   jobDescriptionText: z.string().optional(),
   resumeFile: z.any().optional(),
   jobFile: z.any().optional(),
-}).refine(data => (data.resumeText && data.resumeText.length >= 100) || (data.resumeFile && data.resumeFile.length > 0), {
+}).refine((data) => (data.resumeText && data.resumeText.length >= 100) || (data.resumeFile && data.resumeFile.length > 0), {
   message: "Please provide a resume as text (min 100 chars) or upload a file.",
-  path: ["resumeText"],
-}).refine(data => (data.jobDescriptionText && data.jobDescriptionText.length >= 100) || (data.jobFile && data.jobFile.length > 0), {
+  path: ["resumeFile"],
+}).refine((data) => (data.jobDescriptionText && data.jobDescriptionText.length >= 100) || (data.jobFile && data.jobFile.length > 0), {
   message: "Please provide a job description as text (min 100 chars) or upload a file.",
-  path: ["jobDescriptionText"],
+  path: ["jobFile"],
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -99,6 +99,8 @@ export default function Home() {
     }
   };
 
+  const { errors } = form.formState;
+
   return (
     <div className="flex flex-col min-h-screen bg-background font-body">
       <header className="container mx-auto px-4 py-6 flex items-center gap-3">
@@ -148,8 +150,8 @@ export default function Home() {
                     </Label>
                   </TabsContent>
                 </Tabs>
-                {form.formState.errors.resumeText && (
-                  <p className="text-sm text-destructive mt-2">{form.formState.errors.resumeText.message}</p>
+                {errors.resumeFile && (
+                  <p className="text-sm text-destructive mt-2">{errors.resumeFile.message}</p>
                 )}
               </CardContent>
             </Card>
@@ -183,8 +185,8 @@ export default function Home() {
                     </Label>
                   </TabsContent>
                 </Tabs>
-                {form.formState.errors.jobDescriptionText && (
-                  <p className="text-sm text-destructive mt-2">{form.formState.errors.jobDescriptionText.message}</p>
+                {errors.jobFile && (
+                  <p className="text-sm text-destructive mt-2">{errors.jobFile.message}</p>
                 )}
               </CardContent>
             </Card>
