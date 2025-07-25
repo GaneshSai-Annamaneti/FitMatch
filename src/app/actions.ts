@@ -32,10 +32,10 @@ async function getTextFromFile(file: File): Promise<string> {
 
 
 export async function analyzeDocuments(formData: FormData): Promise<{ data: GenerateFitReportOutput | null; error: string | null }> {
-  let resumeText: string = formData.get("resumeText") as string;
-  const resumeFile = formData.get("resumeFile") as File;
-  let jobDescriptionText: string = formData.get("jobDescriptionText") as string;
-  const jobDescriptionFile = formData.get("jobDescriptionFile") as File;
+  let resumeText: string | undefined = formData.get("resumeText") as string;
+  const resumeFile = formData.get("resumeFile") as File | null;
+  let jobDescriptionText: string | undefined = formData.get("jobDescriptionText") as string;
+  const jobDescriptionFile = formData.get("jobDescriptionFile") as File | null;
 
   try {
     if (resumeFile && resumeFile.size > 0) {

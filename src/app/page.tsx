@@ -19,13 +19,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-const fileSchema = z.custom<FileList>().transform(file => file.length > 0 ? file.item(0) : null);
+const fileSchema = z.custom<FileList>().transform(file => file.length > 0 ? file.item(0) : null).nullable();
 
 const FormSchema = z.object({
   resumeText: z.string().optional(),
-  resumeFile: fileSchema.optional(),
+  resumeFile: fileSchema,
   jobDescriptionText: z.string().optional(),
-  jobDescriptionFile: fileSchema.optional(),
+  jobDescriptionFile: fileSchema,
 }).superRefine((data, ctx) => {
     if (!data.resumeText && !data.resumeFile) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please provide a resume by text or file.", path: ["resumeText"] });
@@ -54,6 +54,8 @@ export default function Home() {
     defaultValues: {
       resumeText: "",
       jobDescriptionText: "",
+      resumeFile: null,
+      jobDescriptionFile: null
     },
   });
   
