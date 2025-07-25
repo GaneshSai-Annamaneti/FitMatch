@@ -23,18 +23,22 @@ import { Label } from "@/components/ui/label";
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = [
   "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/msword",
   "text/plain",
   "text/markdown",
   "text/csv",
 ];
 
 // Use z.any() for file inputs to avoid server-side errors,
-// since FileList is a browser-only API.
+// since FileList is a browser-only API. We'll do the detailed validation on the client.
 const fileSchema = z.any()
-  .refine((files) => files?.length > 0 ? files?.[0]?.size <= MAX_FILE_SIZE : true, `Max file size is 5MB.`)
-  .refine((files) => files?.length > 0 ? ACCEPTED_FILE_TYPES.includes(files?.[0]?.type) : true, "Unsupported file type.");
+  .refine((files) => {
+    if (!files || files.length === 0) return true; // Allow empty state
+    return files?.[0]?.size <= MAX_FILE_SIZE;
+  }, `Max file size is 5MB.`)
+  .refine((files) => {
+    if (!files || files.length === 0) return true; // Allow empty state
+    return ACCEPTED_FILE_TYPES.includes(files?.[0]?.type);
+  }, "Unsupported file type. Please upload a PDF or text file.");
 
 
 const FormSchema = z.object({
@@ -165,11 +169,11 @@ export default function Home() {
                         />
                   </TabsContent>
                   <TabsContent value="file" className="pt-4">
-                     <Label htmlFor="resumeFile">Upload a .pdf, .docx, .doc, .txt, .md, or .csv file</Label>
+                     <Label htmlFor="resumeFile">Upload a .pdf or .txt file</Label>
                      <Input
                         id="resumeFile"
                         type="file"
-                        accept=".pdf,.doc,.docx,.txt,.md,.csv"
+                        accept=".pdf,.txt,.md,.csv"
                         {...form.register("resumeFile")}
                         />
                   </TabsContent>
@@ -200,11 +204,11 @@ export default function Home() {
                           />
                     </TabsContent>
                     <TabsContent value="file" className="pt-4">
-                        <Label htmlFor="jobDescriptionFile">Upload a .pdf, .docx, .doc, .txt, .md, or .csv file</Label>
+                        <Label htmlFor="jobDescriptionFile">Upload a .pdf or .txt file</Label>
                         <Input
                           id="jobDescriptionFile"
                           type="file"
-                          accept=".pdf,.doc,.docx,.txt,.md,.csv"
+                          accept=".pdf,.txt,.md,.csv"
                           {...form.register("jobDescriptionFile")}
                           />
                     </TabsContent>
