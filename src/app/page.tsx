@@ -144,33 +144,14 @@ export default function Home() {
             <Card className="shadow-md">
               <CardHeader>
                 <CardTitle>Your Resume</CardTitle>
-                <CardDescription>Paste the text or upload a file.</CardDescription>
+                <CardDescription>Paste the text of your resume below.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="text" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="text">Text</TabsTrigger>
-                    <TabsTrigger value="file">File</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="text" className="mt-4">
-                    <Textarea
-                      placeholder="Paste your resume..."
-                      className="min-h-[260px] text-sm"
-                      {...form.register("resumeText")}
-                    />
-                  </TabsContent>
-                  <TabsContent value="file" className="mt-4">
-                    <Label htmlFor="resumeFile" className="cursor-pointer flex flex-col items-center justify-center w-full min-h-[260px] border-2 border-dashed rounded-lg">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
-                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p className="text-xs text-muted-foreground">PDF, DOC, DOCX, TXT, MD, CSV</p>
-                        {resumeFileName && <p className="text-xs text-primary mt-2">{resumeFileName}</p>}
-                      </div>
-                      <Input id="resumeFile" type="file" className="hidden" accept=".pdf,.doc,.docx,.txt,.md,.csv" onChange={(e) => handleFileChange(e, "resumeFile", setResumeFileName)} />
-                    </Label>
-                  </TabsContent>
-                </Tabs>
+                <Textarea
+                  placeholder="Paste your resume..."
+                  className="min-h-[260px] text-sm"
+                  {...form.register("resumeText")}
+                />
                 {errors.resumeText && (
                   <p className="text-sm text-destructive mt-2">{errors.resumeText.message}</p>
                 )}
@@ -179,33 +160,14 @@ export default function Home() {
             <Card className="shadow-md">
               <CardHeader>
                 <CardTitle>Job Description</CardTitle>
-                <CardDescription>Paste the text or upload a file.</CardDescription>
+                <CardDescription>Paste the text of the job description below.</CardDescription>
               </CardHeader>
               <CardContent>
-                 <Tabs defaultValue="text" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="text">Text</TabsTrigger>
-                    <TabsTrigger value="file">File</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="text" className="mt-4">
-                    <Textarea
-                      placeholder="Paste the job description..."
-                      className="min-h-[260px] text-sm"
-                      {...form.register("jobDescriptionText")}
-                    />
-                  </TabsContent>
-                  <TabsContent value="file" className="mt-4">
-                    <Label htmlFor="jobFile" className="cursor-pointer flex flex-col items-center justify-center w-full min-h-[260px] border-2 border-dashed rounded-lg">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
-                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p className="text-xs text-muted-foreground">PDF, DOC, DOCX, TXT, MD, CSV</p>
-                        {jobFileName && <p className="text-xs text-primary mt-2">{jobFileName}</p>}
-                      </div>
-                      <Input id="jobFile" type="file" className="hidden" accept=".pdf,.doc,.docx,.txt,.md,.csv" onChange={(e) => handleFileChange(e, "jobFile", setJobFileName)} />
-                    </Label>
-                  </TabsContent>
-                </Tabs>
+                <Textarea
+                  placeholder="Paste the job description..."
+                  className="min-h-[260px] text-sm"
+                  {...form.register("jobDescriptionText")}
+                />
                 {errors.jobDescriptionText && (
                   <p className="text-sm text-destructive mt-2">{errors.jobDescriptionText.message}</p>
                 )}
@@ -265,5 +227,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
