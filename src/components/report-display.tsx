@@ -105,8 +105,8 @@ export function ReportDisplay({ report }: ReportDisplayProps) {
                 <ReportCard title={`Experience (${experience.score}%)`} icon={Clock}>
                      <div className="space-y-4">
                         <div className="flex justify-between text-sm">
-                            <div><span className="font-semibold">Candidate:</span> {experience.candidateYears} years</div>
-                            <div><span className="font-semibold">Required:</span> {experience.requiredYears ? `${experience.requiredYears} years` : 'Not specified'}</div>
+                            <div><span className="font-semibold">Candidate:</span> {experience.candidateExperience}</div>
+                            <div><span className="font-semibold">Required:</span> {experience.requiredExperience ? experience.requiredExperience : 'Not specified'}</div>
                         </div>
                         <Progress value={experience.score} />
                         <div className="flex justify-between items-center text-sm">

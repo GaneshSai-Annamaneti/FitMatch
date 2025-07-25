@@ -30,8 +30,8 @@ const GenerateFitReportOutputSchema = z.object({
     }),
     experience: z.object({
         score: z.number().describe('A score from 0 to 100 for experience.'),
-        candidateYears: z.number().describe('The number of years of experience detected in the resume.'),
-        requiredYears: z.number().optional().describe('The number of years of experience required by the job description.'),
+        candidateExperience: z.string().describe('A human-readable string of the experience detected in the resume (e.g., "6 months", "2 years", "5 years and 3 months").'),
+        requiredExperience: z.string().optional().describe('A human-readable string of the experience required by the job description.'),
         level: z.string().describe('The detected experience level of the candidate (e.g., "Entry", "Mid-Level", "Senior").'),
         fit: z.string().describe('A short assessment of the experience fit (e.g., "Meets Requirement", "Below Requirement").'),
     }),
@@ -75,7 +75,7 @@ const generateFitReportPrompt = ai.definePrompt({
   Instructions:
   1.  **Overall Analysis**: Calculate an overall match score (0-100). Provide a one-word fit assessment (e.g., "Strong", "Moderate", "Weak") and a brief summary.
   2.  **Technical Skills**: Score the technical skills match (0-100). List the skills that match the job description and those that are required but missing.
-  3.  **Experience**: Score the experience match (0-100). Extract the candidate's years of experience and compare it to what's required (if specified). Determine the candidate's experience level (e.g., "Entry", "Mid-Level") and assess the fit. If years are not specified, make a reasonable estimate for the required years based on the job description.
+  3.  **Experience**: Score the experience match (0-100). Extract the candidate's years of experience and compare it to what's required (if specified). Determine the candidate's experience level (e.g., "Entry", "Mid-Level") and assess the fit. IMPORTANT: Express the candidate's experience and the required experience in human-readable strings like "6 months", "1 year and 6 months", or "5 years". Do not use fractional years like "0.83 years". If years are not specified in the job description, make a reasonable estimate for the required experience based on the role.
   4.  **Role Fit**: Score the role fit (0-100). Identify the candidate's current role and the target role. Assess the alignment between them.
   5.  **Education**: Score the education match (0-100). Identify the candidate's highest degree and the required degree (if specified).
   6.  **Summary Report**: Provide a list of key strengths, weaknesses, and a final verdict on the candidate's suitability.
