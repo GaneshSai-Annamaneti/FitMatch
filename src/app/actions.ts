@@ -32,7 +32,7 @@ export async function getTextFromFile(formData: FormData): Promise<{ data: strin
     const buffer = Buffer.from(await file.arrayBuffer());
 
     if (file.type === "application/pdf") {
-      // Pass an empty options object to ensure buffer is used
+      // Pass an empty options object to ensure buffer is used and prevent file system access errors.
       const data = await pdf(buffer, {});
       return { data: data.text, error: null };
     } else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || file.type === "application/msword") {

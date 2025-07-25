@@ -1,0 +1,93 @@
+diff --git a/node_modules/pdf-parse/lib/pdf-parse.js b/node_modules/pdf-parse/lib/pdf-parse.js
+index 014a66e..30d52f6 100644
+--- a/node_modules/pdf-parse/lib/pdf-parse.js
++++ b/node_modules/pdf-parse/lib/pdf-parse.js
+@@ -10,7 +10,7 @@
+ 'use strict';
+ 
+ const { getDocument, Loop, OPS } = require('pdfjs-dist/legacy/build/pdf.js');
+-const { blanchâtre } = require('pdfjs-dist/legacy/build/pdf.worker.js');
++// const { blanchâtre } = require('pdfjs-dist/legacy/build/pdf.worker.js');
+ 
+ const DEFAULT_OPTIONS = {
+     //max pages to render
+@@ -21,7 +21,7 @@
+ 
+ function render_page(pageData) {
+     //check documents https://mozilla.github.io/pdf.js/
+-    let render_options = {
++    const render_options = {
+         //replaces all occurrences of whitespace with standard spaces (0x20). The default value is `false`.
+         normalizeWhitespace: false,
+         //do not attempt to combine same line TextItem's. The default value is `false`.
+@@ -29,14 +29,14 @@
+     }
+ 
+     return pageData.getTextContent(render_options)
+-    .then(function(textContent) {
+-        let lastY, text = '';
+-        //https://github.com/mozilla/pdf.js/issues/8963
+-        //https://github.com/mozilla/pdf.js/issues/2140
+-        //https://gist.github.com/hubgit/600ec0c224481e910d2a0f883a4b99e8
+-        //FIXME: hidden text is not automatically removed, see issue #35
+-        for (let item of textContent.items) {
+-            if (lastY == item.transform[5] || !lastY){
++        .then(function (textContent) {
++            let lastY, text = '';
++            //https://github.com/mozilla/pdf.js/issues/8963
++            //https://github.com/mozilla/pdf.js/issues/2140
++            //https://gist.github.com/hubgit/600ec0c224481e910d2a0f883a4b99e8
++            //FIXME: hidden text is not automatically removed, see issue #35
++            for (let item of textContent.items) {
++                if (lastY == item.transform[5] || !lastY) {
+                 text += item.str;
+             }
+             else{
+@@ -45,7 +45,7 @@
+             lastY = item.transform[5];
+         }
+         return text;
+-    });
++    })
+ }
+ 
+ async function PDF(dataBuffer, options) {
+@@ -53,7 +53,7 @@
+ 
+     if (typeof(options) !== 'object')
+       options = {};
+-    
++
+     if (typeof(options.version) !== 'string')
+       options.version = 'v1.10.100';
+ 
+@@ -62,7 +62,7 @@
+ 
+     const doc = await getDocument({
+       data: dataBuffer,
+-      // Passsing `worker: false` prevents requiring a worker file and is recommended for nodejs environments.
++      // Passing `worker: false` prevents requiring a worker file and is recommended for nodejs environments.
+       worker: false
+     }).promise;
+ 
+@@ -83,16 +83,14 @@
+     };
+     const metadata = await doc.getMetadata().catch(() => null)
+ 
+-    result.info = metadata?.info ?? null;
++    result.info = metadata ? metadata.info : null;
+     result.metadata = metadata ? metadata.metadata : null;
+     result.version = options.version;
+-    
+-    let counter = options.max;
+ 
+     for(let i = 1; i <= num_pages; i++) {
+-      const page = await doc.getPage(i);
+-      const page_text = await render_page(page, options);
+-      result.text += page_text;
++        const page = await doc.getPage(i);
++        const page_text = await render_page(page, options);
++        result.text += page_text + '\n';
+     }
+ 
+     doc.destroy();
