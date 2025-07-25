@@ -46,6 +46,13 @@ const GenerateFitReportOutputSchema = z.object({
         degree: z.string().describe('The highest relevant degree obtained by the candidate.'),
         requiredDegree: z.string().optional().describe('The degree required by the job description.'),
     }),
+    summaryReport: z.object({
+        strengths: z.array(z.string()).describe('A list of key strengths of the candidate.'),
+        weaknesses: z.array(z.string()).describe('A list of key weaknesses or areas for improvement.'),
+        finalVerdict: z.string().describe('A final recommendation or verdict on the candidate\'s suitability.'),
+    }),
+    recommendations: z.array(z.string()).describe("A list of actionable recommendations for the candidate to improve their fit."),
+    considerations: z.array(z.string()).describe("A list of key considerations for the hiring manager or recruiter."),
 });
 export type GenerateFitReportOutput = z.infer<typeof GenerateFitReportOutputSchema>;
 
@@ -71,6 +78,9 @@ const generateFitReportPrompt = ai.definePrompt({
   3.  **Experience**: Score the experience match (0-100). Extract the candidate's years of experience and compare it to what's required (if specified). Determine the candidate's experience level (e.g., "Entry", "Mid-Level") and assess the fit. If years are not specified, make a reasonable estimate for the required years based on the job description.
   4.  **Role Fit**: Score the role fit (0-100). Identify the candidate's current role and the target role. Assess the alignment between them.
   5.  **Education**: Score the education match (0-100). Identify the candidate's highest degree and the required degree (if specified).
+  6.  **Summary Report**: Provide a list of key strengths, weaknesses, and a final verdict on the candidate's suitability.
+  7.  **Recommendations**: Provide a list of actionable recommendations for the candidate to improve their fit for this role or future roles.
+  8.  **Considerations**: Provide a list of key points for a hiring manager to consider when evaluating this candidate.
 
   Provide your analysis in the structured JSON format.`,
 });
