@@ -25,47 +25,47 @@ const ACCEPTED_FILE_TYPES = [
   "application/pdf",
   "text/plain",
   "text/markdown",
-  "text/csv",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+  "application/msword", // .doc
 ];
 
-// Use z.any() for file inputs to avoid server-side errors,
-// since FileList is a browser-only API. We'll do the detailed validation on the client.
-const fileSchema = z.any()
-  .refine((files) => {
-    if (!files || files.length === 0) return true; // Allow empty state
-    return files?.[0]?.size <= MAX_FILE_SIZE;
-  }, `Max file size is 5MB.`)
-  .refine((files) => {
-    if (!files || files.length === 0) return true; // Allow empty state
-    return ACCEPTED_FILE_TYPES.includes(files?.[0]?.type);
-  }, "Unsupported file type. Please upload a PDF or text file.");
-
+// Zod schema for a single file, to be used inside the main form schema.
+const singleFileSchema = z
+  .any()
+  .refine(
+    (files: FileList | undefined) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE,
+    `Max file size is 5MB.`
+  )
+  .refine(
+    (files: FileList | undefined) => !files || files.length === 0 || ACCEPTED_FILE_TYPES.includes(files?.[0]?.type),
+    "Unsupported file type. Please upload a PDF, DOCX, or text file."
+  );
 
 const FormSchema = z.object({
   resumeText: z.string().optional(),
-  resumeFile: fileSchema.optional(),
+  resumeFile: singleFileSchema.optional(),
   jobDescriptionText: z.string().optional(),
-  jobDescriptionFile: fileSchema.optional(),
+  jobDescriptionFile: singleFileSchema.optional(),
   resumeInputType: z.enum(['text', 'file']).default('text'),
   jdInputType: z.enum(['text', 'file']).default('text'),
 })
 .refine(data => {
   if (data.resumeInputType === 'text') {
-    return !!data.resumeText && data.resumeText.length > 0;
+    return !!data.resumeText && data.resumeText.trim().length > 0;
   }
   return !!data.resumeFile && data.resumeFile.length > 0;
 }, {
-  message: "Resume is required.",
-  path: ["resumeText"], 
+  message: "Resume is required. Please paste text or upload a file.",
+  path: ["resumeFile"],
 })
 .refine(data => {
   if (data.jdInputType === 'text') {
-    return !!data.jobDescriptionText && data.jobDescriptionText.length > 0;
+    return !!data.jobDescriptionText && data.jobDescriptionText.trim().length > 0;
   }
   return !!data.jobDescriptionFile && data.jobDescriptionFile.length > 0;
 }, {
-  message: "Job description is required.",
-  path: ["jobDescriptionText"],
+  message: "Job description is required. Please paste text or upload a file.",
+  path: ["jobDescriptionFile"],
 });
 
 
@@ -92,12 +92,14 @@ export default function Home() {
 
     try {
       const formData = new FormData();
+      // Append resume data
       if (data.resumeInputType === 'text' && data.resumeText) {
         formData.append("resumeText", data.resumeText);
       } else if (data.resumeInputType === 'file' && data.resumeFile?.length > 0) {
         formData.append("resumeFile", data.resumeFile[0]);
       }
 
+      // Append job description data
       if (data.jdInputType === 'text' && data.jobDescriptionText) {
         formData.append("jobDescriptionText", data.jobDescriptionText);
       } else if (data.jdInputType === 'file' && data.jobDescriptionFile?.length > 0) {
@@ -115,9 +117,9 @@ export default function Home() {
       } else if (result) {
         setAnalysisResult(result);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast({ variant: "destructive", title: "An unexpected error occurred", description: "Please try again." });
+      toast({ variant: "destructive", title: "An unexpected error occurred", description: err.message || "Please try again." });
     } finally {
       setIsLoading(false);
     }
@@ -154,7 +156,7 @@ export default function Home() {
                   <CardTitle>Your Resume</CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="text" className="w-full" onValueChange={(v) => form.setValue('resumeInputType', v as 'text' | 'file')}>
+                <Tabs defaultValue="text" className="w-full" onValueChange={(v) => { form.setValue('resumeInputType', v as 'text' | 'file'); form.clearErrors("resumeFile")}}>
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="text">Text</TabsTrigger>
                     <TabsTrigger value="file">File</TabsTrigger>
@@ -169,17 +171,17 @@ export default function Home() {
                         />
                   </TabsContent>
                   <TabsContent value="file" className="pt-4">
-                     <Label htmlFor="resumeFile">Upload a .pdf or .txt file</Label>
+                     <Label htmlFor="resumeFile">Upload a .pdf, .docx, or .txt file</Label>
                      <Input
                         id="resumeFile"
                         type="file"
-                        accept=".pdf,.txt,.md,.csv"
+                        accept=".pdf,.doc,.docx,.txt,.md"
                         {...form.register("resumeFile")}
                         />
                   </TabsContent>
                 </Tabs>
-                {(errors.resumeText || errors.resumeFile) && (
-                  <p className="text-sm text-destructive mt-2">{errors.resumeText?.message || errors.resumeFile?.message?.toString()}</p>
+                {errors.resumeFile && (
+                  <p className="text-sm text-destructive mt-2">{errors.resumeFile?.message?.toString()}</p>
                 )}
               </CardContent>
             </Card>
@@ -189,7 +191,7 @@ export default function Home() {
                   <CardTitle>Job Description</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="text" className="w-full" onValueChange={(v) => form.setValue('jdInputType', v as 'text' | 'file')}>
+                  <Tabs defaultValue="text" className="w-full" onValueChange={(v) => {form.setValue('jdInputType', v as 'text' | 'file'); form.clearErrors("jobDescriptionFile")}}>
                     <TabsList className="grid w-full grid-cols-2">
                       <TabsTrigger value="text">Text</TabsTrigger>
                       <TabsTrigger value="file">File</TabsTrigger>
@@ -204,17 +206,17 @@ export default function Home() {
                           />
                     </TabsContent>
                     <TabsContent value="file" className="pt-4">
-                        <Label htmlFor="jobDescriptionFile">Upload a .pdf or .txt file</Label>
+                        <Label htmlFor="jobDescriptionFile">Upload a .pdf, .docx, or .txt file</Label>
                         <Input
                           id="jobDescriptionFile"
                           type="file"
-                          accept=".pdf,.txt,.md,.csv"
+                          accept=".pdf,.doc,.docx,.txt,.md"
                           {...form.register("jobDescriptionFile")}
                           />
                     </TabsContent>
                   </Tabs>
-                   {(errors.jobDescriptionText || errors.jobDescriptionFile) && (
-                      <p className="text-sm text-destructive mt-2">{errors.jobDescriptionText?.message || errors.jobDescriptionFile?.message?.toString()}</p>
+                   {errors.jobDescriptionFile && (
+                      <p className="text-sm text-destructive mt-2">{errors.jobDescriptionFile?.message?.toString()}</p>
                   )}
                 </CardContent>
             </Card>
@@ -259,3 +261,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

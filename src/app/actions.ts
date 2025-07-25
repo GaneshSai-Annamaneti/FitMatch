@@ -1,51 +1,63 @@
 
 "use server";
 import { generateFitReport, type GenerateFitReportOutput } from "@/ai/flows/generate-fit-report";
+import mammoth from "mammoth";
+import pdf from "pdf-parse";
 
 async function getTextFromFile(file: File): Promise<string> {
-  // 1. Check for empty file
   if (!file || file.size === 0) {
     throw new Error(`File "${file.name}" is empty or invalid.`);
   }
 
-  // 2. Read file into a buffer
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
-  // 3. Double-check buffer is not empty before parsing
+  const buffer = Buffer.from(await file.arrayBuffer());
   if (buffer.length === 0) {
     throw new Error(`Failed to read content from file "${file.name}".`);
   }
-  
-  // 4. For now, we will only support text-based files.
-  if (file.type.startsWith('text/') || file.type === 'application/octet-stream') {
-      const text = buffer.toString("utf-8");
-      if(text) return text;
-  }
-
-  // If we get here, the file type is not supported.
-  throw new Error(`Unsupported file type: ${file.type || 'unknown'}. Please upload a plain text file (.txt, .md). PDF and DOCX are not currently supported.`);
-}
-
-
-export async function analyzeDocuments(formData: FormData): Promise<{ data: GenerateFitReportOutput | null; error: string | null }> {
-  let resumeContent: string | undefined = formData.get("resumeText") as string | undefined;
-  const resumeFile = formData.get("resumeFile") as File | null;
-  let jobDescriptionContent: string | undefined = formData.get("jobDescriptionText") as string | undefined;
-  const jobDescriptionFile = formData.get("jobDescriptionFile") as File | null;
 
   try {
-    // Determine resume content
+    if (file.type === "application/pdf") {
+      const data = await pdf(buffer);
+      return data.text;
+    } else if (
+      file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      file.type === "application/msword"
+    ) {
+      const { value } = await mammoth.extractRawText({ buffer });
+      return value;
+    } else if (file.type.startsWith("text/") || file.type === "text/markdown") {
+      return buffer.toString("utf-8");
+    }
+  } catch (error: any) {
+    console.error(`Error parsing file ${file.name} with type ${file.type}:`, error);
+    throw new Error(`Failed to parse file "${file.name}". It might be corrupted or in an unsupported format.`);
+  }
+  
+  throw new Error(`Unsupported file type: ${file.type || 'unknown'}. Please upload a PDF, DOCX, or TXT file.`);
+}
+
+export async function analyzeDocuments(formData: FormData): Promise<{ data: GenerateFitReportOutput | null; error: string | null }> {
+  let resumeContent: string | undefined;
+  let jobDescriptionContent: string | undefined;
+
+  try {
+    const resumeFile = formData.get("resumeFile") as File | null;
+    const resumeText = formData.get("resumeText") as string | null;
+
     if (resumeFile && resumeFile.size > 0) {
       resumeContent = await getTextFromFile(resumeFile);
+    } else if (resumeText) {
+      resumeContent = resumeText;
     }
 
-    // Determine job description content
+    const jobDescriptionFile = formData.get("jobDescriptionFile") as File | null;
+    const jobDescriptionText = formData.get("jobDescriptionText") as string | null;
+
     if (jobDescriptionFile && jobDescriptionFile.size > 0) {
       jobDescriptionContent = await getTextFromFile(jobDescriptionFile);
+    } else if (jobDescriptionText) {
+      jobDescriptionContent = jobDescriptionText;
     }
 
-    // Validate that we have content for both
     if (!resumeContent || resumeContent.trim().length < 50) {
       return { data: null, error: "Please provide a complete resume (at least 50 characters)." };
     }
@@ -53,20 +65,17 @@ export async function analyzeDocuments(formData: FormData): Promise<{ data: Gene
       return { data: null, error: "Please provide a complete job description (at least 50 characters)." };
     }
 
-    // Call the AI model
-    const result = await generateFitReport({ 
-        resumeText: resumeContent, 
-        jobDescriptionText: jobDescriptionContent 
+    const result = await generateFitReport({
+      resumeText: resumeContent,
+      jobDescriptionText: jobDescriptionContent,
     });
-    return { data: result, error: null };
     
+    return { data: result, error: null };
+
   } catch (e: any) {
     console.error(e);
-    // Provide a more specific error if it's our custom file reading error
-    if (e.message.startsWith('Unsupported file type') || e.message.startsWith('File "')) {
-        return { data: null, error: e.message };
-    }
-    // Generic error for anything else
-    return { data: null, error: "An error occurred while analyzing the documents. The file might be corrupted or in an unsupported format." };
+    return { data: null, error: e.message || "An unexpected error occurred during analysis." };
   }
 }
+
+    
