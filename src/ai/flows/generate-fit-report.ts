@@ -1,3 +1,4 @@
+
 // This file is machine-generated - edit with caution!
 'use server';
 /**
@@ -78,7 +79,7 @@ const generateFitReportPrompt = ai.definePrompt({
   {{jobDescriptionText}}
 
   Instructions:
-  1.  **Overall Analysis**: Calculate an overall match score (0-100). Provide a one-word fit assessment (e.g., "Strong", "Moderate", "Weak") and a brief summary.
+  1.  **Overall Analysis**: Calculate an overall match score (0-100). Provide a one-word fit assessment (e.g., "Strong", "Moderate", "Weak") and a brief summary. If all other section scores (Technical Skills, Experience, etc.) are 0, the overall 'matchScore' MUST also be 0.
   2.  **Technical Skills**: Score the technical skills match (0-100). List the skills that match the job description and those that are required but missing. A skill is "matched" only if it appears in BOTH the resume and the job description. Any matched skill MUST NOT appear in the missing list. If no skills are matched, the score MUST be 0.
   3.  **Experience**: Score the experience match (0-100). Extract the candidate's years of experience and compare it to what's required. Determine the candidate's experience level (e.g., "Entry", "Mid-Level", "Senior"). IMPORTANT: Express the candidate's experience and the required experience in human-readable strings like "6 months", "1 year and 6 months", or "5 years". Do not use fractional years like "0.83 years". If years of experience are not specified in the job description, set the 'requiredExperience' field to "Not specified", set the 'fit' to "Not Applicable", and the score should reflect an educated guess based on the role's seniority, but if the candidate's experience is clearly irrelevant or minimal for a non-entry role, the score should be very low or 0.
   4.  **Role Fit**: Score the role fit (0-100). Identify the candidate's current role and the target role. Assess the alignment between them. If the alignment is "Poor", the score MUST be 0.
@@ -102,5 +103,3 @@ const generateFitReportFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    
