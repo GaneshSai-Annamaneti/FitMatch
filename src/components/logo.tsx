@@ -8,24 +8,26 @@ export const Logo = ({ className }: { className?: string }) => {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <rect x="4" y="12" width="4" height="8" rx="1" className="fill-primary" />
-      <rect x="10" y="8" width="4" height="12" rx="1" className="fill-primary" />
-      <path
-        d="M16 4H20V8"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="stroke-primary"
-      />
-      <path
-        d="M16 14L16 4L20 4"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="stroke-primary"
-      />
+        <path
+            d="M4 14H8V20H4V14Z"
+            className="fill-primary"
+        />
+        <path
+            d="M10 10H14V20H10V10Z"
+            className="fill-primary"
+        />
+        <path
+            d="M16 6H20V20H16V6Z"
+            className="fill-primary"
+        />
+        <path
+            d="M4 12L10 6L16 2L20 6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="stroke-primary"
+        />
     </svg>
   );
 };
