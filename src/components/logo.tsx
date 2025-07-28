@@ -20,14 +20,6 @@ export const Logo = ({ className }: { className?: string }) => {
             d="M16 6H20V20H16V6Z"
             className="fill-primary"
         />
-        <path
-            d="M4 12L10 6L16 2L20 6"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="stroke-primary"
-        />
     </svg>
   );
 };
