@@ -6,18 +6,26 @@ export const Logo = ({ className }: { className?: string }) => {
       className={cn("h-8 w-8", className)}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       xmlns="http://www.w3.org/2000/svg"
     >
-        <path d="M3 20V4" className="stroke-foreground" />
-        <path d="M4 18h2" className="stroke-primary" />
-        <path d="M8 15h2" className="stroke-primary" />
-        <path d="M12 12h2" className="stroke-primary" />
-        <path d="M16 9h2" className="stroke-primary" />
-        <path d="M20 6h2" className="stroke-primary" />
+      <rect x="4" y="12" width="4" height="8" rx="1" className="fill-primary" />
+      <rect x="10" y="8" width="4" height="12" rx="1" className="fill-primary" />
+      <path
+        d="M16 4H20V8"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="stroke-primary"
+      />
+      <path
+        d="M16 14L16 4L20 4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="stroke-primary"
+      />
     </svg>
   );
 };
