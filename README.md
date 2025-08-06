@@ -96,3 +96,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - UI Components from [Shadcn UI](https://ui.shadcn.com/)
 - Icons by [Lucide](https://lucide.dev/)
 - Powered by [Google's Generative AI](https://ai.google/)
+
